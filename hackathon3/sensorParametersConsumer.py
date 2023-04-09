@@ -9,11 +9,14 @@ consumer = KafkaConsumer(bootstrap_servers=["127.0.0.1:54351"], group_id="demo-g
                          value_deserializer=lambda m: json.loads(m.decode('ascii')))
 
 while True:
-    subscription_order_id = randint(1, 3)
-    subscription_topic = str(subscription_order_id)
+    subscription_id = randint(1, 3)
+    subscription_topic = str(subscription_id)
     consumer.subscribe(subscription_topic)
+    print (consumer)
     try:
         for message in consumer:
+            print (type(message))
+            print (message)
             topic_info = f"topic: {message.partition}|{message.offset})"
             message_info = f"key: {message.key}, {message.value}"
             print (f"{topic_info}, {message_info}")

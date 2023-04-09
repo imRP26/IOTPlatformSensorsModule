@@ -1,7 +1,8 @@
+import ast
 from config import app, db
 from datetime import datetime
 import json
-from kafka import KafkaProducer
+from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import KafkaError
 from models import Sensor, Parameters, parameters_schema
 from random import randint
@@ -27,6 +28,11 @@ om2m_auth = requests.auth.HTTPBasicAuth(om2m_username, om2m_password)
 sensor_types = ['Brightness', 'Humidity', 'Temperature']
 producer = KafkaProducer(bootstrap_servers = "127.0.0.1:54351", 
                          value_serializer=lambda m: json.dumps(m).encode('ascii'))
+consumer = KafkaConsumer(bootstrap_servers=["127.0.0.1:54351"], group_id="demo-group",
+                         auto_offset_reset="earliest", enable_auto_commit=False,
+                         consumer_timeout_ms=1000, 
+                         value_deserializer=lambda m: json.loads(m.decode('ascii')))
+external_request_topic = 'otherTeamRequest'
 
 with app.app_context():
     while True:
@@ -35,9 +41,14 @@ with app.app_context():
         dict_obj = xmltodict.parse(om2m_response.text)
         data = dict_obj['m2m:cin']
         sensor_id = randint(1, 3)
-        #sensor = Sensor.query.get(sensor_id)
         kafka_topic = str(sensor_id)
         sensor = db.session.get(Sensor, sensor_id)
+        consumer.subscribe(external_request_topic)
+        temp_list = ast.literal_eval(data['con'])
+        for msg in consumer:
+            temp_list[2] = msg.value['new_value']
+            data['con'] = str(temp_list)
+            print (data)
         parameter = {'content' : str(data), 'sensor_id' : sensor_id}
         future = producer.send(kafka_topic, parameter)
         future.add_callback(on_success)
