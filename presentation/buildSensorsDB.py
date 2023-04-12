@@ -226,7 +226,6 @@ def addDataToDB():
     om2m_csebase = '~/in-cse/'
     om2m_resource_path = 'in-name/AE-TEST/Node-1/Data/la'
     om2m_auth = requests.auth.HTTPBasicAuth(om2m_username, om2m_password)
-    sensor_types = ['Brightness', 'Humidity', 'Temperature']
     producer = KafkaProducer(bootstrap_servers = "127.0.0.1:54351", 
                              value_serializer=lambda m: json.dumps(m).encode('ascii'))
     consumer = KafkaConsumer(bootstrap_servers=["127.0.0.1:54351"], group_id="demo-group",
@@ -234,16 +233,19 @@ def addDataToDB():
                              consumer_timeout_ms=1000, 
                              value_deserializer=lambda m: json.loads(m.decode('ascii')))
     external_request_topic = 'action_device'
+    new_values_dict = {}
     with app.app_context():
         while True:
             om2m_response = requests.get(om2m_url + om2m_csebase + om2m_resource_path, auth=om2m_auth)
             timestamp = datetime.now().replace(microsecond=0).isoformat(' ')
             sensor_info = requests.get('http://127.0.0.1:8046/api/sensors')
             sensor_info = json.loads(sensor_info.text)
-            active_sensors, new_values_dict = [], {}
+            active_sensors = []
             for sensor in sensor_info:
                 if sensor['sensoractive']:
                     active_sensors.append(sensor['id'])
+                    if sensor['id'] not in new_values_dict:
+                        new_values_dict[sensor['id']] = None
             try:
                 dict_obj = xmltodict.parse(om2m_response.text)
                 data = dict_obj['m2m:cin']
@@ -253,9 +255,17 @@ def addDataToDB():
                 sensor = db.session.get(Sensor, sensor_id)
                 consumer.subscribe(external_request_topic)
                 temp_list = ast.literal_eval(data['con'])
+                # from the other team -> user_id, device_id, new_value
                 for msg in consumer:
-                    temp_list[2] = msg.value['new_value']
-                    data['con'] = str(temp_list)
+                    user_id, sid, new_value = msg.value['user_id'], msg.value['device_id'], msg.value['new_value']
+                    if sid == sensor_id:
+                        temp_list[2] = msg.value['new_value']
+                        data['con'] = str(temp_list)
+                if sensor_id not in new_values_dict:
+                    new_values_dict[sensor_id] = None
+                if new_values_dict[sensor_id] is not None:
+                    temp_list[2] = new_values_dict[sensor_id]
+                    data['con'] = str(temp_list)   
                 parameter = {'content' : str(data), 'sensor_id' : sensor_id}
                 future = producer.send(kafka_topic, parameter)
                 future.add_callback(on_success)
