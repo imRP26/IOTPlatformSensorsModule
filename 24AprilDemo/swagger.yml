@@ -107,6 +107,15 @@ paths:
       responses: 
         "204": 
           description: "Successfully deleted sensor node"
+  /findfreenodes:
+    get:
+      operationId: "nodes.check_for_free_nodes"
+      tags: 
+        - Nodes
+      summary: "Read the number of free sensor nodes of each sensor type"
+      responses: 
+        "200": 
+          description: "Successfully read the list of number of free sensor nodes"
   /parameters:
     get: 
       operationId: "parameters.read_all"
