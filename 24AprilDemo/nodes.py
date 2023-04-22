@@ -1,6 +1,8 @@
 from config import db
 from flask import abort, make_response
+import json
 from models import Node, nodes_schema, node_schema
+import requests
 
 
 def read_all():
@@ -52,3 +54,17 @@ def delete(nodename):
         return make_response(f"{nodename} successfully deleted", 200)
     else:
         abort(404, f"Node with nodename {nodename} not found")
+
+
+def check_for_free_nodes():
+    nodes_info = json.loads(requests.get('http://127.0.0.1:8056/api/nodes').text)
+    free_nodes_dict = {}
+    for node in nodes_info:
+        node_type = node['nodetype']
+        if node['nodeactive']:
+            continue
+        if node_type in free_nodes_dict:
+            free_nodes_dict[node_type] += 1
+        else:
+            free_nodes_dict[node_type] = 1
+    return free_nodes_dict
