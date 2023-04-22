@@ -63,8 +63,12 @@ def check_for_free_nodes():
         node_type = node['nodetype']
         if node['nodeactive']:
             continue
-        if node_type in free_nodes_dict:
-            free_nodes_dict[node_type] += 1
-        else:
-            free_nodes_dict[node_type] = 1
+        free_node_content = {}
+        free_node_content['id'] = node['id']
+        free_node_content['nodename'] = node['nodename']
+        free_node_content['nodelatitude'] = node['nodelatitude']
+        free_node_content['nodelongitude'] = node['nodelongitude']
+        if node_type not in free_nodes_dict:
+            free_nodes_dict[node_type] = list()
+        free_nodes_dict[node_type].append(free_node_content)
     return free_nodes_dict
