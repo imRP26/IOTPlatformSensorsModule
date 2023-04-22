@@ -9,6 +9,7 @@ app.add_api(config.basedir / 'swagger.yml')
 
 @app.route('/')
 def home():
+    config.db.create_all()
     nodes = Node.query.all()
     return render_template('home.html', nodes=nodes)
 
