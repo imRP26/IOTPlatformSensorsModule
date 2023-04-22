@@ -148,9 +148,9 @@ The controller function of the script that calls the desired functions
 '''
 def main():
     module_name = 'SensorManager'
-    #t = threading.Thread(target=heart_beat, args=(module_name,))
-    #t.daemon = True
-    #t.start()
+    t = threading.Thread(target=heart_beat, args=(module_name,))
+    t.daemon = True
+    t.start()
     log = 'sensorManager.log'
     logging.basicConfig(filename=log, filemode='w', level=logging.DEBUG, \
                         format='%(asctime)s %(message)s', datefmt='%d/%m/%Y %H:%M:%S')
