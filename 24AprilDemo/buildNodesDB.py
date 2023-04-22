@@ -1,6 +1,6 @@
 from config import app, db
 from datetime import datetime
-#from heartBeat import heart_beat
+from heartBeat import heart_beat
 import json
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import KafkaError
@@ -33,54 +33,41 @@ def initializeAllNodes():
                              value_serializer=lambda m: json.dumps(m).encode('ascii'))
     # The list of sensor-types is pre-decided
     sensor_types = ['PM10', 'Temperature', 'AQI', 'pH', 'Pressure', 'Occupancy', \
-                    'Current', 'Frequency', 'Light_Status']
+                    'Current', 'Frequency', 'Light_Status', 'Turbidity', 'Flowrate', 'Rain', \
+                    'Energy', 'Power', 'Voltage', 'CO2', 'VOC', 'RSSI', 'Latency', 'Packet_Size']
+    node_names, node_latitudes, node_longitudes, node_types, node_ips, node_ports = [], [], [], [], [], []
+    unique_node_names = set()
     for sensor_type in sensor_types:
         om2m_url1 = 'https://iudx-rs-onem2m.iiit.ac.in/resource/nodes/' + sensor_type
         node_list = requests.get(om2m_url1).json()['results']
         for node in node_list:
             om2m_url2 = 'https://iudx-rs-onem2m.iiit.ac.in/resource/descriptor/' + node
             node_dict = requests.get(om2m_url2).json()
-            try:
-                node_name = node_dict['Node ID']
-                node_latitude = node_dict['Node Location']['Latitude']
-                node_longitude = node_dict['Node Location']['Longitude']
-                node_parameter_type = sensor_type
-                node_ip = '192.168.36.' + str(randint(10, 50))
-                node_port = randint(8000, 9000)
-                dt_iso = datetime.now().isoformat()
-                dot_index = dt_iso.index('.')
-                dt_iso = dt_iso[:dot_index] + 'Z'
-                om2m_url3 = 'https://iudx-rs-onem2m.iiit.ac.in/channels/' + node_id + '/feeds?start=' + dt_iso
-                node_data_dict = requests.get(om2m_url3).json()
-                node_parameter_value = randint(20, 40)
-                if 'channel' in node_data_dict:
-                    node_parameter_fields = node_data_dict['channel']
-                    node_parameter_field = None
-                    for node_parameter in node_parameter_fields:
-                        if node_data_dict[node_parameter] == sensor_type:
-                            node_parameter_field = node_parameter
-                            break
-                    temp_value = node_data_dict['feeds'][0][node_parameter_field]
-                    if not isinstance(temp_value, str):
-                        node_parameter_value = temp_value
-                with app.app_context():
-                    #db.drop_all()
-                    db.create_all()
-                    new_node = Node(nodename=node_name, nodetype=sensor_type, nodelatitude=node_latitude, 
-                                    nodelongitude=node_longitude, nodeip=node_ip, nodeport=node_port)
-                    content_dict = {}
-                    content_dict[sensor_type] = node_parameter_value
-                    new_node.parameters.append(Parameters(content=str(content_dict), \
-                                               timestamp=datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S'), ))
-                    parameter = {'content' : str(content_dict), 'node_name' : node_name}
-                    kafka_topic = node_name
-                    future = producer.send(kafka_topic, parameter)
-                    future.add_callback(onSuccess)
-                    future.add_errback(onError)
-                    db.session.add(new_node)
-                    db.session.commit()
-            except Exception as e:
+            node_name = node_dict['Node ID']
+            if node_name in unique_node_names:
                 continue
+            unique_node_names.add(node_name)
+            node_names.append(node_name)
+            node_latitudes.append(node_dict['Node Location']['Latitude'])
+            node_longitudes.append(node_dict['Node Location']['Longitude'])
+            node_types.append(sensor_type)
+            node_ip = '192.168.36.' + str(randint(10, 50))
+            node_ips.append(node_ip)
+            node_ports.append(randint(8000, 9000))
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        for i in range(len(node_names)):
+            node_name = node_names[i]
+            node_type = node_types[i]
+            node_latitude = node_latitudes[i]
+            node_longitude = node_longitudes[i]
+            node_ip = node_ips[i]
+            node_port = node_ports[i]
+            new_node = Node(nodename=node_name, nodetype=node_type, nodelatitude=node_latitude, 
+                            nodelongitude=node_longitude, nodeip=node_ip, nodeport=node_port)
+            db.session.add(new_node)
+            db.session.commit()
 
 
 '''
@@ -93,9 +80,6 @@ def addDataToDB():
                              auto_offset_reset="earliest", enable_auto_commit=False,
                              consumer_timeout_ms=1000, 
                              value_deserializer=lambda m: json.loads(m.decode('ascii')))
-    # The list of sensor-types is pre-decided
-    sensor_types = ['PM10', 'Temperature', 'AQI', 'pH', 'Pressure', 'Occupancy', \
-                    'Current', 'Frequency', 'Light_Status']
     active_nodes = []
     external_request_topic = 'action_device' # Fixed by the Action Manager Module
     action_manager_module_info = []
@@ -141,7 +125,7 @@ def addDataToDB():
                 new_parameter = parameters_schema.load(parameter, session=db.session)
                 node.parameters.append(new_parameter)
                 db.session.commit()
-                sleep(5)
+                sleep(3)
             except Exception as e:
                 print ('Erroneous Data!!')
                 continue
@@ -153,8 +137,12 @@ def addDataToDB():
 The controller function of the script that calls the desired functions
 '''
 def main():
+    module_name = 'SensorManager'
+    #t = threading.Thread(target=heart_beat, args=(module_name,))
+    #t.daemon = True
+    #t.start()
     initializeAllNodes()
-    addDataToDB()
+    #addDataToDB()
 
 
 if __name__ == '__main__':
