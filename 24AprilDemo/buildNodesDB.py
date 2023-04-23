@@ -12,6 +12,7 @@ import sys
 import threading
 from time import sleep
 
+KAFKA_IP_PORT = '127.0.0.1:53471'
 
 '''
 Message on KAFKA Push success
@@ -31,8 +32,6 @@ def onError(e):
 Initial filling of the latest instance of data for all the nodes
 '''
 def initializeAllNodes():
-    producer = KafkaProducer(bootstrap_servers = "127.0.0.1:53471", 
-                             value_serializer=lambda m: json.dumps(m).encode('ascii'))
     # The list of sensor-types is pre-decided
     sensor_types = ['PM10', 'Temperature', 'AQI', 'AQL', 'pH', 'Pressure', 'Occupancy', \
                     'Current', 'Frequency', 'Light_Status', 'Turbidity', 'Flowrate', 'Rain', \
@@ -80,9 +79,9 @@ def initializeAllNodes():
 Addition of Data to local SQLITE3 DB 
 '''
 def addDataToDB():
-    producer = KafkaProducer(bootstrap_servers = "127.0.0.1:53471", 
+    producer = KafkaProducer(bootstrap_servers=KAFKA_IP_PORT, 
                              value_serializer=lambda m: json.dumps(m).encode('ascii'))
-    consumer = KafkaConsumer(bootstrap_servers=["127.0.0.1:53471"], group_id="demo-group", 
+    consumer = KafkaConsumer(bootstrap_servers=[KAFKA_IP_PORT], group_id="demo-group", 
                              auto_offset_reset="earliest", enable_auto_commit=False,
                              consumer_timeout_ms=1000, 
                              value_deserializer=lambda m: json.loads(m.decode('ascii')))
