@@ -21,7 +21,7 @@ def stream():
         with open('sensorManager.log') as f:
             while True:
                 yield f.read()
-                #sleep(1)
+                sleep(1)
     return flask_app.response_class(generate(), mimetype='text/plain')
 
 
