@@ -1,5 +1,7 @@
 from config import app, db
 from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv()
 #from heartBeat import heart_beat
 import json
 from kafka import KafkaConsumer, KafkaProducer
@@ -12,8 +14,8 @@ import sys
 import threading
 from time import sleep
 
-#KAFKA_IP_PORT = '10.2.138.158:19092'
-KAFKA_IP_PORT = '127.0.0.1:53471'
+#KAFKA_IP_PORT = '127.0.0.1:53471'
+KAFKA_IP_PORT = os.getenv('KAFKA_URI')
 
 '''
 Message on KAFKA Push success
