@@ -6,13 +6,14 @@ from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import KafkaError
 import logging
 from models import Node, Parameters, parameters_schema
-from random import randint, uniform
+from random import randint
 import requests
 import sys
 import threading
 from time import sleep
 
-KAFKA_IP_PORT = '10.2.138.158:19092'
+#KAFKA_IP_PORT = '10.2.138.158:19092'
+KAFKA_IP_PORT = '127.0.0.1:53471'
 
 '''
 Message on KAFKA Push success
@@ -147,17 +148,15 @@ Dummy Data for Initialization of Sensor Nodes
 '''
 def initializeAllDummyNodes():
     # The list of sensor-types is pre-decided
-    sensor_types = ['PM10', 'Temperature', 'AQI', 'AQL', 'pH', 'Pressure', 'Occupancy', \
-                    'Current', 'Frequency', 'Light_Status', 'Turbidity', 'Flowrate', 'Rain', \
-                    'Energy', 'Power', 'Voltage', 'CO2', 'VOC', 'RSSI', 'Latency', 'Alarm', 'Packet_Size', \
-                    'Data_Rate', 'Mac_Address', 'Node_Status']
+    sensor_types = ['Temperature', 'AQI', 'pH', 'Pressure', 'Occupancy', 'Current', \
+                    'Rain', 'RoomEnergy', 'Power', 'Voltage', 'SolarEnergy']
     node_names, node_latitudes, node_longitudes, node_types, node_ips, node_ports = [], [], [], [], [], []
     for sensor_type in sensor_types:
-        num_sensor_nodes = randint(5, 15)
+        num_sensor_nodes = randint(10, 20)
         for node_index in range(num_sensor_nodes):
-            node_names.append(sensor_type + str(node_index + 1))
-            node_latitudes.append(uniform(-90.0, 90.0))
-            node_longitudes.append(uniform(-180.0, 180.0))
+            node_names.append(sensor_type + '_' + str(node_index + 1))
+            node_latitudes.append(randint(-90, 90))
+            node_longitudes.append(randint(-180, 180))
             node_types.append(sensor_type)
             node_ips.append('192.168.10.' + str(randint(10, 80)))
             node_ports.append(randint(800, 8900))
@@ -167,7 +166,7 @@ def initializeAllDummyNodes():
         for i in range(len(node_names)):
             new_node = Node(nodename=node_names[i], nodetype=node_types[i], nodelatitude=node_latitudes[i], 
                             nodelongitude=node_longitudes[i], nodeip=node_ips[i], nodeport=node_ports[i])
-            logging.info('Added new node to the SQLITE3 DB!')
+            logging.info('Added new sensor node to the SQLITE3 DB!')
             db.session.add(new_node)
             db.session.commit()
 
@@ -195,7 +194,15 @@ def addDummyDataToDB():
                 kafka_topic = str(node_id)
                 dt_iso = datetime.now().isoformat()
                 try:
-                    node_parameter_value = randint(20, 40)
+                    node_parameter_value = -1
+                    if node_type == 'AQI':
+                        node_parameter_value = randint(10, 200)
+                    elif node_type == 'SolarEnergy':
+                        node_parameter_value = randint(1, 10)
+                    elif node_type == 'RoomEnergy':
+                        node_parameter_value = randint(1, 10)
+                    else:
+                        node_parameter_value = randint(20, 40)
                     node = db.session.get(Node, node_id)
                     consumer.subscribe(external_request)
                     # from the other team -> user_id, device_id, new_value
@@ -217,7 +224,7 @@ def addDummyDataToDB():
                     node.parameters.append(new_parameter)
                     db.session.commit()
                     logging.info('Uploaded sensor node data to SQLITE3 DB!')
-                    sleep(2)
+                    #sleep(2)
                 except Exception as e:
                     logging.info('Some unforeseen error!')
                     continue
