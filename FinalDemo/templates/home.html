@@ -8,6 +8,7 @@
     </head>
     <body>
         <h1>Welcome</h1>
+        <!--
         <ul>
             {% for node in nodes %}
             <h2>{{ node.nodename }} {{ node.nodetype }} {{ node.latitude }} {{ node.longitude }}</h2>
@@ -20,5 +21,16 @@
             </ul>
             {% endfor %}
         </ul>
+        -->
+        <pre id="output"></pre>
+        <script>
+            var output = document.getElementById('output');
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '{{ url_for('stream') }}');
+            xhr.send();
+            setInterval(function() {
+                output.textContent = xhr.responseText;
+            }, 1000);
+        </script>
     </body>
 </html>
