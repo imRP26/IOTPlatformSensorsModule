@@ -2,6 +2,9 @@ import pickle
 import requests
 
 
+'''
+The controller function of the script that gets all available nodes' locations from OM2MURL!!
+'''
 def main():
     nodes_url = 'https://iudx-rs-onem2m.iiit.ac.in/resource/nodes'
     sensor_node_locations = set()
