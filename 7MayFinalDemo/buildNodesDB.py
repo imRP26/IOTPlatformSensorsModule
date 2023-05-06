@@ -217,13 +217,13 @@ def addDummyDataToDB():
                 try:
                     node_parameter_value = -1
                     if node_type == 'AQI':
-                        node_parameter_value = randint(10, 200)
+                        node_parameter_value = randint(20, 26) # > 25
                     elif node_type == 'SolarEnergy':
-                        node_parameter_value = randint(1, 10)
+                        node_parameter_value = randint(22, 38) # > 35
                     elif node_type == 'RoomEnergy':
-                        node_parameter_value = randint(1, 10)
+                        node_parameter_value = randint(21, 28) # > 26
                     else:
-                        node_parameter_value = randint(20, 40)
+                        node_parameter_value = randint(20, 40) # > 36
                     node = db.session.get(Node, node_id)
                     consumer.subscribe(external_request)
                     # from the other team -> user_id, device_id, new_value
