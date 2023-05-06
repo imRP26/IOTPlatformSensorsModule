@@ -16,8 +16,10 @@ import sys
 import threading
 from time import sleep
 
+
 #KAFKA_IP_PORT = '127.0.0.1:53471'
 KAFKA_IP_PORT = os.getenv('KAFKA_URI')
+
 
 '''
 Message on KAFKA Push success
@@ -145,7 +147,7 @@ def addDataToDB():
                     continue
     producer.flush()
     producer.close()
-        
+
 
 '''
 Dummy Data for Initialization of Sensor Nodes
@@ -154,6 +156,10 @@ def initializeAllDummyNodes():
     # The list of sensor-types is pre-decided
     sensor_types = ['Temperature', 'AQI', 'pH', 'Pressure', 'Occupancy', 'Current', \
                     'Rain', 'RoomEnergy', 'Power', 'Voltage', 'SolarEnergy']
+    type_name_mappings = {'Temperature' : 'WE-GS', 'AQI' : 'SR-AQ', 'pH' : 'WM-WD', \
+                          'Pressure' : 'WM-WF', 'Occupancy' : 'SR-OC-GW', 'Current' : 'SR-EC', \
+                          'Rain' : 'WE-VN', 'RoomEnergy' : 'SR-AC', 'Power' : 'SR-EP', \
+                          'Voltage' : 'SR-EV', 'SolarEnergy' : 'SR-OC'}
     # The list of unique node locations is uploaded from a static file which has already 
     # been pre-collected from OM2M API - can't rely on it!! 
     all_node_locations = []
@@ -163,9 +169,16 @@ def initializeAllDummyNodes():
     for sensor_type in sensor_types:
         num_sensor_nodes = randint(10, 15)
         for node_index in range(num_sensor_nodes):
-            node_names.append(sensor_type + '_' + str(node_index + 1))
+            pos = ''
+            if node_index < 10:
+                pos = '0' + str(node_index)
+            else:
+                pos = str(node_index)
+            node_location = all_node_locations[randint(0, len(all_node_locations) - 1)]
+            node_name = type_name_mappings[sensor_type] + '-' + node_location + '-' + pos
+            node_names.append(node_name)
             node_types.append(sensor_type)
-            node_locations.append(all_node_locations[randint(0, len(all_node_locations) - 1)])
+            node_locations.append(node_location)
             node_ips.append('192.168.10.' + str(randint(10, 80)))
             node_ports.append(randint(8100, 8900))
     with app.app_context():
@@ -232,7 +245,7 @@ def addDummyDataToDB():
                     node.parameters.append(new_parameter)
                     db.session.commit()
                     logging.info('Uploaded sensor node data to SQLITE3 DB!')
-                    #sleep(2)
+                    sleep(1)
                 except Exception as e:
                     logging.info('Some unforeseen error!')
                     continue
