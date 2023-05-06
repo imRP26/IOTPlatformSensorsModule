@@ -1,6 +1,7 @@
 import config
 from flask import render_template
 from models import Node
+import os
 from time import sleep
 
 
@@ -18,11 +19,19 @@ def home():
 
 @app.route('/stream')
 def stream():
+    '''
+    Generator Function that yields new lines in a file
+    '''
     def generate():
-        with open('sensorManager.log') as f:
+        with open('sensorManager.log') as logfile:
+            logfile.seek(0, os.SEEK_END)
             while True:
-                yield f.read()
-                sleep(2)
+                line = logfile.readline()
+                # sleep if file hasn't been updated
+                if not line:
+                    sleep(0.1)
+                    continue
+                yield line
     return flask_app.response_class(generate(), mimetype='text/plain')
 
 
