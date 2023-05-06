@@ -2,7 +2,7 @@ from config import app, db
 from datetime import datetime
 from dotenv import load_dotenv
 load_dotenv()
-#from heartBeat import heart_beat
+from heartBeat import heart_beat
 import json
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import KafkaError
@@ -16,8 +16,8 @@ import sys
 import threading
 from time import sleep
 
-KAFKA_IP_PORT = '127.0.0.1:53471'
-#KAFKA_IP_PORT = os.getenv('KAFKA_URI')
+#KAFKA_IP_PORT = '127.0.0.1:53471'
+KAFKA_IP_PORT = os.getenv('KAFKA_URI')
 
 '''
 Message on KAFKA Push success
@@ -245,9 +245,9 @@ The controller function of the script that calls the desired functions
 '''
 def main():
     module_name = 'SensorManager'
-    #t = threading.Thread(target=heart_beat, args=(module_name,))
-    #t.daemon = True
-    #t.start()
+    t = threading.Thread(target=heart_beat, args=(module_name,))
+    t.daemon = True
+    t.start()
     log = 'sensorManager.log'
     logging.basicConfig(filename=log, filemode='w', level=logging.DEBUG, \
                         format='%(asctime)s %(message)s', datefmt='%d/%m/%Y %H:%M:%S')
