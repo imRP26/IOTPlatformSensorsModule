@@ -257,7 +257,7 @@ def addDummyDataToDB():
 The controller function of the script that calls the desired functions
 '''
 def main():
-    module_name = 'SensorManager'
+    module_name = 'sensor_manager'
     t = threading.Thread(target=heart_beat, args=(module_name,))
     t.daemon = True
     t.start()
